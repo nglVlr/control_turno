@@ -1,0 +1,79 @@
+/* ============================================================
+   SISTEMA CONTROL DE TURNOS — Estilos personalizados
+   Complementa Bootstrap 5
+   ============================================================ */
+
+:root {
+    --ct-primario: #2C3E50;
+    --ct-secundario: #3498DB;
+}
+
+/* ── LOGIN ─────────────────────────────────────────────────── */
+.login-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #2C3E50 0%, #3498DB 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-logo {
+    width: 56px;
+    height: 56px;
+    background-color: var(--ct-secundario);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+/* ── NAVBAR ─────────────────────────────────────────────────── */
+.navbar-custom {
+    background-color: var(--ct-primario);
+}
+
+/* ── MENU CARDS ─────────────────────────────────────────────── */
+.menu-card {
+    border: none;
+    border-top: 4px solid var(--ct-secundario);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+    color: inherit;
+}
+
+/* ── BADGES DE ESTADO ───────────────────────────────────────── */
+.badge-activo    { background-color: #d4edda; color: #155724; }
+.badge-inactivo  { background-color: #f8d7da; color: #721c24; }
+.badge-pendiente { background-color: #fff3cd; color: #856404; }
+.badge-aprobado  { background-color: #d4edda; color: #155724; }
+.badge-rechazado { background-color: #f8d7da; color: #721c24; }
+.badge-vigente   { background-color: #cce5ff; color: #004085; }
+
+/* ── TABLA ──────────────────────────────────────────────────── */
+.tabla-header {
+    background-color: var(--ct-primario);
+    color: #fff;
+}
+
+/* ── PAGE TITLE ─────────────────────────────────────────────── */
+.page-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--ct-primario);
+    padding-bottom: 12px;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 24px;
+}
