@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="controlTurnos.util.AppConfig"%>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,12 +10,10 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
 <div class="login-wrapper">
     <div class="login-card p-4">
         <div class="card shadow-sm border-0">
             <div class="card-body p-4">
-
                 <div class="text-center mb-4">
                     <div class="login-logo mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="white" viewBox="0 0 16 16">
@@ -24,36 +23,29 @@
                     </div>
                     <h4 class="fw-bold mb-1" style="color:#2C3E50;">Control de Turnos</h4>
                     <p class="text-muted small">Ingresa tus credenciales para continuar</p>
+                    <span class="badge bg-secondary" style="font-size:0.7rem;"><%=AppConfig.VERSION%></span>
                 </div>
-
                 <% if (request.getAttribute("error") != null) { %>
                     <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
                         <small><%= request.getAttribute("error") %></small>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <% } %>
-
                 <form action="LoginServlet" method="post">
                     <div class="mb-3">
-                        <label for="usuario" class="form-label fw-semibold">Usuario</label>
-                        <input type="text" class="form-control" id="usuario" name="usuario"
-                               placeholder="Ingresa tu usuario" required autofocus>
+                        <label class="form-label fw-semibold">Usuario</label>
+                        <input type="text" class="form-control" name="usuario" placeholder="Ingresa tu usuario" required autofocus>
                     </div>
                     <div class="mb-4">
-                        <label for="contrasena" class="form-label fw-semibold">Contraseña</label>
-                        <input type="password" class="form-control" id="contrasena" name="contrasena"
-                               placeholder="Ingresa tu contraseña" required>
+                        <label class="form-label fw-semibold">Contraseña</label>
+                        <input type="password" class="form-control" name="contrasena" placeholder="Ingresa tu contraseña" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
-                        Iniciar Sesión
-                    </button>
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">Iniciar Sesión</button>
                 </form>
-
             </div>
         </div>
     </div>
 </div>
-
 <script src="js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -30,7 +30,7 @@
         <url-pattern>/LogoutServlet</url-pattern>
     </servlet-mapping>
 
-    <!-- CU1 - MANTENIMIENTO DE USUARIOS -->
+    <!-- CU1 - MANTENIMIENTO DE USUARIOS Y AREAS -->
     <servlet>
         <servlet-name>EmpleadoServlet</servlet-name>
         <servlet-class>controlTurnos.servlet.EmpleadoServlet</servlet-class>
@@ -48,6 +48,46 @@
     <servlet-mapping>
         <servlet-name>MarcajeServlet</servlet-name>
         <url-pattern>/MarcajeServlet</url-pattern>
+    </servlet-mapping>
+
+    <!-- CU3 - ASIGNACION DE TURNOS -->
+    <servlet>
+        <servlet-name>AsignacionTurnoServlet</servlet-name>
+        <servlet-class>controlTurnos.servlet.AsignacionTurnoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AsignacionTurnoServlet</servlet-name>
+        <url-pattern>/AsignacionTurnoServlet</url-pattern>
+    </servlet-mapping>
+
+    <!-- CU4 - GESTION DE SOLICITUDES (AdminArea y AdminRRHH) -->
+    <servlet>
+        <servlet-name>SolicitudServlet</servlet-name>
+        <servlet-class>controlTurnos.servlet.SolicitudServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SolicitudServlet</servlet-name>
+        <url-pattern>/SolicitudServlet</url-pattern>
+    </servlet-mapping>
+
+    <!-- CU5 - GESTIONES DEL EMPLEADO -->
+    <servlet>
+        <servlet-name>EmpleadoGestionServlet</servlet-name>
+        <servlet-class>controlTurnos.servlet.EmpleadoGestionServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EmpleadoGestionServlet</servlet-name>
+        <url-pattern>/EmpleadoGestionServlet</url-pattern>
+    </servlet-mapping>
+
+    <!-- REASIGNACION DIRECTA POR RRHH -->
+    <servlet>
+        <servlet-name>ReasignacionServlet</servlet-name>
+        <servlet-class>controlTurnos.servlet.ReasignacionServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ReasignacionServlet</servlet-name>
+        <url-pattern>/ReasignacionServlet</url-pattern>
     </servlet-mapping>
 
 </web-app>
