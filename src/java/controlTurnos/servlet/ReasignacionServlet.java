@@ -54,7 +54,7 @@ public class ReasignacionServlet extends HttpServlet {
                        .forward(request, response);
                 break;
 
-            // AJAX — cargar AdminAreas disponibles según área+turno nuevo
+            // AJAX - cargar AdminAreas disponibles según área+turno nuevo
             case "adminAreasPorAreaYTurno":
                 int idArea  = Integer.parseInt(request.getParameter("idArea"));
                 int idTurno = Integer.parseInt(request.getParameter("idTurno"));
