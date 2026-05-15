@@ -139,16 +139,7 @@
             </a>
         </div>
 
-        <div class="col-lg-3 col-md-6">
-            <a href="${pageContext.request.contextPath}/EmpleadoGestionServlet?accion=menu" class="mcard">
-                <div class="mcard-icon green">📝</div>
-                <div>
-                    <h6>Mis Gestiones</h6>
-                    <p>Ver mis propias solicitudes y cambios de turno</p>
-                </div>
-            </a>
-        </div>
-
+       
     </div>
 </div>
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
