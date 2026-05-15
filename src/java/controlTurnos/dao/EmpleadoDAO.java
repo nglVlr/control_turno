@@ -11,7 +11,6 @@ import java.util.List;
 
 public class EmpleadoDAO {
 
-    // SQL base con todos los JOINs necesarios
     private static final String SQL_BASE =
         "SELECT e.id_empleado, e.dpi, e.nombre_completo, e.usuario, "
       + "e.correo, e.estado, e.id_area, e.id_rol, e.id_turno_default, "
@@ -23,16 +22,13 @@ public class EmpleadoDAO {
       + "mdf.nombre_completo AS modificado_por_nombre "
       + "FROM empleados e "
       + "INNER JOIN roles    r   ON e.id_rol           = r.id_rol "
-      + "INNER JOIN areas    a   ON e.id_area          = a.id_area "
+      + "LEFT  JOIN areas    a   ON e.id_area          = a.id_area "
       + "LEFT  JOIN turnos   t   ON e.id_turno_default = t.id_turno "
       + "LEFT  JOIN empleados adm ON e.id_admin_area   = adm.id_empleado "
       + "LEFT  JOIN empleados cre ON e.creado_por      = cre.id_empleado "
       + "LEFT  JOIN empleados mdf ON e.modificado_por  = mdf.id_empleado ";
 
-    // ─────────────────────────────────────────────────────────
-    // LOGIN — compara con MD5() de MySQL
-    // La contraseña en BD está encriptada con MD5
-    // ─────────────────────────────────────────────────────────
+    // La contraseña en BD está encriptada con MD5 — se compara con MD5() de MySQL
     public Empleado login(String usuario, String contrasena) {
         Empleado empleado = null;
         String sql = SQL_BASE
@@ -55,12 +51,9 @@ public class EmpleadoDAO {
         return empleado;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR TODOS — AdminRRHH ve todos
-    // ─────────────────────────────────────────────────────────
     public List<Empleado> listarTodos() {
         List<Empleado> lista = new ArrayList<>();
-        String sql = SQL_BASE + "ORDER BY a.nombre_area, t.nombre_turno, e.nombre_completo";
+        String sql = SQL_BASE + "ORDER BY IFNULL(a.nombre_area,''), IFNULL(t.nombre_turno,''), e.nombre_completo";
         Connection con = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -77,10 +70,6 @@ public class EmpleadoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR POR ADMINAREA — AdminArea ve SOLO sus empleados
-    // Nuevo requerimiento: cada empleado pertenece a un AdminArea
-    // ─────────────────────────────────────────────────────────
     public List<Empleado> listarPorAdminArea(int idAdminArea) {
         List<Empleado> lista = new ArrayList<>();
         String sql = SQL_BASE
@@ -103,9 +92,6 @@ public class EmpleadoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR POR AREA Y TURNO — para formulario de asignación
-    // ─────────────────────────────────────────────────────────
     public List<Empleado> listarPorAreaYTurno(int idArea, int idTurno) {
         List<Empleado> lista = new ArrayList<>();
         String sql = SQL_BASE
@@ -129,10 +115,6 @@ public class EmpleadoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR ADMINAREA POR AREA Y TURNO
-    // Para el combo al crear/editar empleado
-    // ─────────────────────────────────────────────────────────
     public List<Empleado> listarAdminAreaPorAreaYTurno(int idArea, int idTurno) {
         List<Empleado> lista = new ArrayList<>();
         String sql = SQL_BASE
@@ -157,11 +139,44 @@ public class EmpleadoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // AGREGAR — CU1 paso 7
-    // Guarda id_admin_area y creado_por
-    // Contraseña se guarda con MD5() de MySQL
-    // ─────────────────────────────────────────────────────────
+    // AdminRRHH: área y turno pueden ser 0 (NULL en BD)
+    // AdminArea: área y turno requeridos, sin AdminArea
+    // Empleado : área, turno y AdminArea requeridos
+    public boolean agregarConRol(Empleado emp) {
+        String sql = "INSERT INTO empleados "
+                   + "(dpi, nombre_completo, usuario, contrasena, correo, "
+                   + "id_area, id_rol, id_turno_default, id_admin_area, estado, creado_por) "
+                   + "VALUES (?, ?, ?, MD5(?), ?, ?, ?, ?, ?, 'Activo', ?)";
+        Connection con = null;
+        PreparedStatement ps = null;
+        try {
+            con = Conexion.getConexion();
+            ps = con.prepareStatement(sql);
+            ps.setString(1, emp.getDpi());
+            ps.setString(2, emp.getNombreCompleto());
+            ps.setString(3, emp.getUsuario());
+            ps.setString(4, emp.getContrasena());
+            ps.setString(5, emp.getCorreo());
+            // Área — NULL si es 0
+            if (emp.getIdArea() > 0) ps.setInt(6, emp.getIdArea());
+            else ps.setNull(6, java.sql.Types.INTEGER);
+            ps.setInt(7, emp.getIdRol());
+            // Turno — NULL si es 0
+            if (emp.getIdTurnoDefault() > 0) ps.setInt(8, emp.getIdTurnoDefault());
+            else ps.setNull(8, java.sql.Types.INTEGER);
+            // AdminArea — NULL si es 0 (AdminRRHH y AdminArea no dependen de nadie)
+            if (emp.getIdAdminArea() > 0) ps.setInt(9, emp.getIdAdminArea());
+            else ps.setNull(9, java.sql.Types.INTEGER);
+            ps.setInt(10, emp.getCreadoPor());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error al agregar usuario: " + e.getMessage());
+            return false;
+        } finally {
+            cerrar(null, ps, con);
+        }
+    }
+
     public boolean agregar(Empleado emp) {
         String sql = "INSERT INTO empleados "
                    + "(dpi, nombre_completo, usuario, contrasena, correo, "
@@ -190,9 +205,26 @@ public class EmpleadoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // BUSCAR POR ID
-    // ─────────────────────────────────────────────────────────
+    public Empleado buscarPorUsuario(String usuario) {
+        Empleado empleado = null;
+        String sql = SQL_BASE + "WHERE e.usuario = ?";
+        Connection con = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            con = Conexion.getConexion();
+            ps = con.prepareStatement(sql);
+            ps.setString(1, usuario);
+            rs = ps.executeQuery();
+            if (rs.next()) empleado = mapear(rs);
+        } catch (SQLException e) {
+            System.out.println("Error al buscar por usuario: " + e.getMessage());
+        } finally {
+            cerrar(rs, ps, con);
+        }
+        return empleado;
+    }
+
     public Empleado buscarPorId(int idEmpleado) {
         Empleado empleado = null;
         String sql = SQL_BASE + "WHERE e.id_empleado = ?";
@@ -213,10 +245,6 @@ public class EmpleadoDAO {
         return empleado;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // INACTIVAR — CU1-FA03
-    // Guarda modificado_por
-    // ─────────────────────────────────────────────────────────
     public boolean inactivar(int idEmpleado, String motivo, int modificadoPor) {
         String sql = "UPDATE empleados SET estado = 'Inactivo', "
                    + "motivo_inactivacion = ?, modificado_por = ? "
@@ -238,10 +266,6 @@ public class EmpleadoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CAMBIAR ROL — FA09
-    // Guarda modificado_por
-    // ─────────────────────────────────────────────────────────
     public boolean cambiarRol(int idEmpleado, int idRolNuevo, int modificadoPor) {
         String sql = "UPDATE empleados SET id_rol = ?, modificado_por = ? "
                    + "WHERE id_empleado = ?";
@@ -262,9 +286,6 @@ public class EmpleadoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CAMBIAR ADMIN AREA — cuando cambia turno o puesto
-    // ─────────────────────────────────────────────────────────
     public boolean cambiarAdminArea(int idEmpleado, int idAdminAreaNuevo, int modificadoPor) {
         String sql = "UPDATE empleados SET id_admin_area = ?, modificado_por = ? "
                    + "WHERE id_empleado = ?";
@@ -285,9 +306,6 @@ public class EmpleadoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // REASIGNAR — RRHH cambia área, turno y AdminArea directamente
-    // ─────────────────────────────────────────────────────────
     public boolean reasignar(int idEmpleado, int idArea, int idTurno,
                              int idAdminArea, int modificadoPor) {
         String sql = "UPDATE empleados SET id_area = ?, id_turno_default = ?, "
@@ -312,9 +330,26 @@ public class EmpleadoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // EXISTEUSARIO — validación duplicado
-    // ─────────────────────────────────────────────────────────
+    public boolean reactivar(int idEmpleado, int modificadoPor) {
+        String sql = "UPDATE empleados SET estado = 'Activo', "
+                   + "motivo_inactivacion = NULL, modificado_por = ? "
+                   + "WHERE id_empleado = ? AND estado = 'Inactivo'";
+        Connection con = null;
+        PreparedStatement ps = null;
+        try {
+            con = Conexion.getConexion();
+            ps = con.prepareStatement(sql);
+            ps.setInt(1, modificadoPor);
+            ps.setInt(2, idEmpleado);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error al reactivar: " + e.getMessage());
+            return false;
+        } finally {
+            cerrar(null, ps, con);
+        }
+    }
+
     public boolean existeUsuario(String usuario) {
         String sql = "SELECT id_empleado FROM empleados WHERE usuario = ?";
         Connection con = null;
@@ -334,9 +369,6 @@ public class EmpleadoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // BUSCAR ADMINAREA POR AREA Y TURNO — FA09 unicidad
-    // ─────────────────────────────────────────────────────────
     public Empleado buscarAdminAreaPorAreaYTurno(int idArea, int idTurno) {
         Empleado empleado = null;
         String sql = SQL_BASE
@@ -360,10 +392,7 @@ public class EmpleadoDAO {
         return empleado;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // NUEVOS POR ADMINAREA — Bug fix para LoginServlet
-    // Usa id_admin_area en lugar de área+turno
-    // ─────────────────────────────────────────────────────────
+    // Usa id_admin_area en lugar de área+turno para encontrar empleados nuevos del AdminArea
     public List<Empleado> listarNuevosUltimas24HorasPorAdmin(int idAdminArea) {
         List<Empleado> lista = new ArrayList<>();
         String sql = SQL_BASE
@@ -387,9 +416,6 @@ public class EmpleadoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR NUEVOS ÚLTIMAS 24H — por área y turno (método original)
-    // ─────────────────────────────────────────────────────────
     public List<Empleado> listarNuevosUltimas24Horas(int idArea, int idTurno) {
         List<Empleado> lista = new ArrayList<>();
         String sql = SQL_BASE
@@ -414,9 +440,6 @@ public class EmpleadoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // MAPEAR ResultSet → Empleado
-    // ─────────────────────────────────────────────────────────
     private Empleado mapear(ResultSet rs) throws SQLException {
         Empleado e = new Empleado();
         e.setIdEmpleado(rs.getInt("id_empleado"));

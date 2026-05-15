@@ -31,21 +31,18 @@ public class SolicitudServlet extends HttpServlet {
 
         switch (accion) {
 
-            // ── Menú de solicitudes según rol ──
             case "menu":
                 if ("AdminRRHH".equals(rol)) {
-                    // CU1-FA06: RRHH ve solicitudes de gestión aprobadas por AdminArea
+                    // RRHH ve solicitudes de gestión en estado 'Aprobada AdminArea' y cambios de turno pendientes
                     request.setAttribute("listaSolicitudesGestion", gestionDAO.listarPendientesRRHH());
                     request.setAttribute("listaSolicitudesCambio",  ctDAO.listarPendientesRRHH());
                     request.getRequestDispatcher("/jsp/solicitudes_rrhh.jsp").forward(request, response);
                 } else if ("AdminArea".equals(rol)) {
-                    // CU4: AdminArea ve pendientes de sus empleados
                     cargarVistaSolicitudesAdminArea(request, sesion);
                     request.getRequestDispatcher("/jsp/solicitudes_admin_area.jsp").forward(request, response);
                 }
                 break;
 
-            // ── Polling tiempo real — CU4 requerimiento entre pestañas ──
             case "poll":
                 responderPoll(request, response, sesion);
                 break;
@@ -88,13 +85,10 @@ public class SolicitudServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // RESOLVER CAMBIO DE TURNO — CU4 paso 8/FA02
     // Solo AdminRRHH puede Aprobar o Rechazar
     // Si aprueba: aplica el cambio en la tabla empleados
     // Notifica a AdminArea origen y destino (notif = Pendiente)
     // Tiempo real: la otra pestaña verá el cambio en el siguiente poll
-    // ─────────────────────────────────────────────────────────
     private void resolverCambioTurno(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -129,11 +123,8 @@ public class SolicitudServlet extends HttpServlet {
         request.getRequestDispatcher("/jsp/solicitudes_rrhh.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // RESOLVER GESTION — CU4-FA03/FA04 (AdminArea) y CU1-FA06 (RRHH)
     // AdminArea: Pendiente → Aprobada AdminArea / Rechazada AdminArea
     // RRHH: Aprobada AdminArea → Aprobada RRHH / Rechazada RRHH
-    // ─────────────────────────────────────────────────────────
     private void resolverGestion(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -175,10 +166,7 @@ public class SolicitudServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // POLL — endpoint JSON para tiempo real entre pestañas
-    // Devuelve conteo de pendientes para actualizar badges
-    // ─────────────────────────────────────────────────────────
+    // Endpoint JSON para polling de tiempo real entre pestañas — actualiza badges de pendientes
     private void responderPoll(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion) throws IOException {
         response.setContentType("application/json");
@@ -189,7 +177,7 @@ public class SolicitudServlet extends HttpServlet {
             pendientes = ctDAO.contarPendientesRRHH()
                        + gestionDAO.contarPendientesRRHH();
         } else if ("AdminArea".equals(rol)) {
-            // Bug fix: contar por id_admin_area, no por área+turno
+            // Contar por id_admin_area, no por área+turno
             pendientes = gestionDAO.contarPendientesPorAdminArea(sesion.getIdEmpleado())
                        + ctDAO.contarNotificacionesAdminArea(
                             sesion.getIdArea(), sesion.getIdTurnoDefault());
@@ -197,10 +185,7 @@ public class SolicitudServlet extends HttpServlet {
         response.getWriter().write("{\"pendientes\":" + pendientes + "}");
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CARGAR VISTA ADMINAREA
     // Bug fix: usa id del AdminArea, no área+turno
-    // ─────────────────────────────────────────────────────────
     private void cargarVistaSolicitudesAdminArea(HttpServletRequest request, Empleado sesion) {
         // Solicitudes de gestión de SUS empleados (por id_admin_area)
         request.setAttribute("listaSolicitudesGestion",
@@ -211,9 +196,6 @@ public class SolicitudServlet extends HttpServlet {
                         sesion.getIdArea(), sesion.getIdTurnoDefault()));
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VALIDAR SESIÓN — AdminRRHH y AdminArea
-    // ─────────────────────────────────────────────────────────
     private Empleado validarSesion(HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);

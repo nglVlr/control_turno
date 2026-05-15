@@ -7,7 +7,7 @@
     <display-name>ControlTurnos</display-name>
 
     <welcome-file-list>
-        <welcome-file>LoginServlet</welcome-file>
+        <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
 
     <!-- LOGIN -->

@@ -11,11 +11,7 @@ import java.util.List;
 
 public class SolicitudCambioTurnoDAO {
 
-    // ─────────────────────────────────────────────────────────
-    // CREAR SOLICITUD — CU5-FA02
-    // Empleado envía solicitud de cambio de turno/área
-    // Estado inicial: Pendiente — lo resuelve el RRHH
-    // ─────────────────────────────────────────────────────────
+    // Estado inicial: Pendiente — lo resuelve el AdminRRHH
     public boolean crear(SolicitudCambioTurno s) {
         String sql = "INSERT INTO solicitudes_cambio_turno "
                    + "(id_empleado, fecha_inicial, id_turno_inicial, id_area_origen, "
@@ -44,10 +40,6 @@ public class SolicitudCambioTurnoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR PENDIENTES PARA RRHH — CU4
-    // AdminRRHH ve todas las pendientes para decidir
-    // ─────────────────────────────────────────────────────────
     public List<SolicitudCambioTurno> listarPendientesRRHH() {
         List<SolicitudCambioTurno> lista = new ArrayList<>();
         String sql = "SELECT s.*, e.nombre_completo AS nombre_empleado, "
@@ -64,11 +56,8 @@ public class SolicitudCambioTurnoDAO {
         return ejecutarLista(sql, null, null);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR NOTIFICACIONES PARA ADMINAREA — CU4
-    // AdminArea ve las solicitudes donde él es origen o destino
-    // y que ya fueron resueltas por RRHH pero aún no vistas
-    // ─────────────────────────────────────────────────────────
+    // AdminArea ve las solicitudes donde él es origen o destino,
+    // ya resueltas por RRHH pero aún no vistas por él
     public List<SolicitudCambioTurno> listarNotificacionesAdminArea(int idArea, int idTurno) {
         List<SolicitudCambioTurno> lista = new ArrayList<>();
         String sql = "SELECT s.*, e.nombre_completo AS nombre_empleado, "
@@ -104,9 +93,6 @@ public class SolicitudCambioTurnoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR TODAS — historial completo para AdminRRHH
-    // ─────────────────────────────────────────────────────────
     public List<SolicitudCambioTurno> listarTodas() {
         String sql = "SELECT s.*, e.nombre_completo AS nombre_empleado, "
                    + "ti.nombre_turno AS turno_inicial, tn.nombre_turno AS turno_nuevo, "
@@ -121,9 +107,6 @@ public class SolicitudCambioTurnoDAO {
         return ejecutarLista(sql, null, null);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR POR EMPLEADO — historial del empleado
-    // ─────────────────────────────────────────────────────────
     public List<SolicitudCambioTurno> listarPorEmpleado(int idEmpleado) {
         String sql = "SELECT s.*, e.nombre_completo AS nombre_empleado, "
                    + "ti.nombre_turno AS turno_inicial, tn.nombre_turno AS turno_nuevo, "
@@ -154,12 +137,8 @@ public class SolicitudCambioTurnoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // RESOLVER POR RRHH — CU4: Aprobar o Rechazar
     // Si aprueba: actualiza turno del empleado en tabla empleados
     // Notifica a AdminArea origen y destino (notif = Pendiente)
-    // Si es misma área+turno: notif_destino = Visto (no aplica)
-    // ─────────────────────────────────────────────────────────
     public boolean resolver(int idSolicitud, int idRrhh, String decision, String observacion) {
         String sql = "UPDATE solicitudes_cambio_turno "
                    + "SET estado = ?, id_rrhh_resolvio = ?, "
@@ -184,10 +163,7 @@ public class SolicitudCambioTurnoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // APLICAR CAMBIO DE TURNO — solo si fue Aprobado
-    // Actualiza el turno default del empleado en tabla empleados
-    // ─────────────────────────────────────────────────────────
+    // Solo si fue Aprobado — actualiza el turno default del empleado en tabla empleados
     public boolean aplicarCambio(int idSolicitud) {
         String sql = "UPDATE empleados e "
                    + "INNER JOIN solicitudes_cambio_turno s ON e.id_empleado = s.id_empleado "
@@ -209,9 +185,6 @@ public class SolicitudCambioTurnoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // MARCAR NOTIFICACIÓN VISTA — AdminArea marca como vista
-    // ─────────────────────────────────────────────────────────
     public void marcarVistaOrigen(int idSolicitud) {
         ejecutarUpdate("UPDATE solicitudes_cambio_turno SET notif_admin_origen = 'Visto' "
                 + "WHERE id_solicitud_ct = ?", idSolicitud);
@@ -222,9 +195,6 @@ public class SolicitudCambioTurnoDAO {
                 + "WHERE id_solicitud_ct = ?", idSolicitud);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CONTAR PENDIENTES RRHH — para badge en el menú
-    // ─────────────────────────────────────────────────────────
     public int contarPendientesRRHH() {
         String sql = "SELECT COUNT(*) FROM solicitudes_cambio_turno WHERE estado = 'Pendiente'";
         Connection con = null;
@@ -243,9 +213,6 @@ public class SolicitudCambioTurnoDAO {
         return 0;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CONTAR NOTIFICACIONES ADMINAREA — para badge en menú
-    // ─────────────────────────────────────────────────────────
     public int contarNotificacionesAdminArea(int idArea, int idTurno) {
         String sql = "SELECT COUNT(*) FROM solicitudes_cambio_turno "
                    + "WHERE estado != 'Pendiente' "
@@ -269,9 +236,6 @@ public class SolicitudCambioTurnoDAO {
         return 0;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────────────────
     private List<SolicitudCambioTurno> ejecutarLista(String sql, Integer p1, Integer p2) {
         List<SolicitudCambioTurno> lista = new ArrayList<>();
         Connection con = null;

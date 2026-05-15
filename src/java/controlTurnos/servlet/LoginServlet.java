@@ -29,7 +29,6 @@ public class LoginServlet extends HttpServlet {
             HttpSession session = request.getSession();
             session.setAttribute("empleado", empleado);
 
-            // Bitácora — registrar login exitoso
             bitacoraDAO.registrar(empleado.getIdEmpleado(), empleado.getUsuario(),
                     "Login", "Login", "Inicio de sesion: " + empleado.getNombreCompleto());
 

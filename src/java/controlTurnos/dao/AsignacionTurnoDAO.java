@@ -11,11 +11,7 @@ import java.util.List;
 
 public class AsignacionTurnoDAO {
 
-    // ─────────────────────────────────────────────────────────
-    // ASIGNAR TURNO — CU3 paso 10
-    // AdminArea solo puede asignar turnos a empleados de
-    // su misma área y turno (validado en el Servlet)
-    // ─────────────────────────────────────────────────────────
+    // AdminArea solo puede asignar turnos a empleados de su misma área y turno (validado en el Servlet)
     public boolean asignar(AsignacionTurno at) {
         // Cancelar asignación vigente anterior del empleado antes de crear la nueva
         cancelarVigente(at.getIdEmpleado());
@@ -42,9 +38,6 @@ public class AsignacionTurnoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CANCELAR VIGENTE — antes de crear nueva asignación
-    // ─────────────────────────────────────────────────────────
     private void cancelarVigente(int idEmpleado) {
         String sql = "UPDATE asignacion_turnos SET estado = 'Modificada' "
                    + "WHERE id_empleado = ? AND estado = 'Vigente'";
@@ -62,10 +55,7 @@ public class AsignacionTurnoDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR POR ADMINAREA — AdminArea ve solo asignaciones de SUS empleados
-    // Usa id_admin_area del empleado, no área+turno
-    // ─────────────────────────────────────────────────────────
+    // AdminArea ve solo asignaciones de SUS empleados — usa id_admin_area, no área+turno
     public List<AsignacionTurno> listarPorAdminArea(int idAdminArea) {
         List<AsignacionTurno> lista = new ArrayList<>();
         String sql = "SELECT at.id_asignacion, at.id_empleado, at.id_turno, "
@@ -95,9 +85,6 @@ public class AsignacionTurnoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR POR AREA Y TURNO — método anterior mantenido por compatibilidad
-    // ─────────────────────────────────────────────────────────
     public List<AsignacionTurno> listarPorAreaYTurno(int idArea, int idTurno) {
         List<AsignacionTurno> lista = new ArrayList<>();
         String sql = "SELECT at.id_asignacion, at.id_empleado, at.id_turno, "
@@ -128,9 +115,6 @@ public class AsignacionTurnoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR TODOS — AdminRRHH ve todas las asignaciones
-    // ─────────────────────────────────────────────────────────
     public List<AsignacionTurno> listarTodos() {
         List<AsignacionTurno> lista = new ArrayList<>();
         String sql = "SELECT at.id_asignacion, at.id_empleado, at.id_turno, "

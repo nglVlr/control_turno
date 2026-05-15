@@ -7,12 +7,8 @@ import java.sql.SQLException;
 
 public class BitacoraDetalleDAO {
 
-    // ─────────────────────────────────────────────────────────
-    // REGISTRAR DETALLE DE BITÁCORA
-    // Si es creación: valorAnterior = null
-    // Si es modificación: ambos tienen valor
-    // Si es el usuario nuevo: idUsuarioAfectado puede ser null
-    // ─────────────────────────────────────────────────────────
+    // Si es creación: valorAnterior = null. Si es modificación: ambos tienen valor.
+    // idUsuarioAfectado puede ser null cuando la operación no afecta a un usuario específico.
     public void registrar(long idLog, Integer idUsuarioAfectado,
                           String campocambiado,
                           String valorAnterior, String valorNuevo) {

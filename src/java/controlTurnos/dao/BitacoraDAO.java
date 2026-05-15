@@ -9,11 +9,7 @@ import java.sql.Statement;
 
 public class BitacoraDAO {
 
-    // ─────────────────────────────────────────────────────────
-    // REGISTRAR EN BITÁCORA — retorna el id_log generado
-    // Se necesita el id_log para poder registrar el detalle
-    // en BitacoraDetalleDAO
-    // ─────────────────────────────────────────────────────────
+    // Retorna el id_log generado — necesario para encadenar registros en BitacoraDetalleDAO
     public long registrar(int idEmpleado, String login, String modulo,
                           String tipoOperacion, String descripcion) {
         String sql = "INSERT INTO bitacora "

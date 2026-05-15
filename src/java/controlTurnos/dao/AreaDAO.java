@@ -11,7 +11,6 @@ import java.util.List;
 
 public class AreaDAO {
 
-    // Listar todas las áreas activas — para combos
     public List<Area> listarActivas() {
         List<Area> lista = new ArrayList<>();
         String sql = "SELECT id_area, nombre_area, descripcion, activo "
@@ -34,7 +33,6 @@ public class AreaDAO {
         return lista;
     }
 
-    // Buscar área por ID — para editar
     public Area buscarPorId(int idArea) {
         Area area = null;
         String sql = "SELECT id_area, nombre_area, descripcion, activo FROM areas WHERE id_area = ?";
@@ -55,7 +53,6 @@ public class AreaDAO {
         return area;
     }
 
-    // Editar descripción del área — CU1 nuevo requerimiento
     public boolean editar(int idArea, String descripcion) {
         String sql = "UPDATE areas SET descripcion = ? WHERE id_area = ?";
         Connection con = null;

@@ -61,7 +61,6 @@ public class MarcajeServlet extends HttpServlet {
         String login      = sesion.getUsuario();
         String mensajeError = null;
 
-        // Obtener turno del empleado para validar horario
         Turno turno = turnoDAO.buscarPorId(sesion.getIdTurnoDefault());
 
         Marcaje marcajeHoy = marcajeDAO.obtenerMarcajeHoy(idEmpleado);
@@ -71,7 +70,6 @@ public class MarcajeServlet extends HttpServlet {
             case "entrada":
                 if (marcajeHoy != null && marcajeHoy.getHoraEntrada() != null) {
                     mensajeError = "Ya registraste tu entrada el día de hoy.";
-                // Validar que esté en su horario de turno
                 } else if (!marcajeDAO.estaEnHorario(turno)) {
                     mensajeError = "No puedes marcar fuera de tu horario de turno ("
                             + (turno != null ? turno.getHoraInicio() + " - " + turno.getHoraFin() : "") + ").";
@@ -159,10 +157,7 @@ public class MarcajeServlet extends HttpServlet {
         request.getRequestDispatcher("/jsp/marcaje.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CARGAR VISTA
     // AdminArea ve marcajes de SUS empleados (id_admin_area)
-    // ─────────────────────────────────────────────────────────
     private void cargarVista(HttpServletRequest request, Empleado sesion) {
         Turno turno = turnoDAO.buscarPorId(sesion.getIdTurnoDefault());
         request.setAttribute("turno", turno);
@@ -174,9 +169,6 @@ public class MarcajeServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VALIDAR SESIÓN — AdminRRHH, AdminArea y Empleado
-    // ─────────────────────────────────────────────────────────
     private Empleado validarSesion(HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);

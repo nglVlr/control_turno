@@ -34,7 +34,6 @@ public class EmpleadoGestionServlet extends HttpServlet {
         switch (accion) {
 
             case "menu":
-                // Historial de gestiones del empleado
                 request.setAttribute("listaGestiones",
                         gestionDAO.listarPorEmpleado(sesion.getIdEmpleado()));
                 request.setAttribute("listaCambios",
@@ -44,13 +43,11 @@ public class EmpleadoGestionServlet extends HttpServlet {
                 break;
 
             case "formularioGestion":
-                // CU5 paso 5 — formulario de gestiones
                 request.getRequestDispatcher("/jsp/solicitar_gestion.jsp")
                        .forward(request, response);
                 break;
 
             case "formularioCambioTurno":
-                // CU5-FA02 — formulario cambio de turno
                 request.setAttribute("listaTurnos", turnoDAO.listarActivos());
                 request.getRequestDispatcher("/jsp/solicitar_cambio_turno.jsp")
                        .forward(request, response);
@@ -86,11 +83,7 @@ public class EmpleadoGestionServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CREAR GESTIÓN — CU5 paso 8
-    // Empleado solicita vacaciones, permisos, IGSS, etc.
-    // Estado inicial: Pendiente — AdminArea de su área y turno la verá
-    // ─────────────────────────────────────────────────────────
+    // Empleado solicita vacaciones, permisos, IGSS, etc. — estado inicial: Pendiente
     private void crearGestion(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -106,7 +99,6 @@ public class EmpleadoGestionServlet extends HttpServlet {
         boolean exito = gestionDAO.crear(s);
 
         if (exito) {
-            // CU5 paso 10 — bitácora
             bitacoraDAO.registrar(sesion.getIdEmpleado(), sesion.getUsuario(),
                     "Gestiones", "Solicitar",
                     "Gestión creada por " + sesion.getNombreCompleto()
@@ -124,12 +116,8 @@ public class EmpleadoGestionServlet extends HttpServlet {
         request.getRequestDispatcher("/jsp/gestiones_empleado.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CREAR CAMBIO DE TURNO — CU5-FA02
-    // Empleado solicita cambio de turno/área
     // Estado inicial: Pendiente — lo resuelve el RRHH
     // Si es mismo área, origen=destino pero turno diferente
-    // ─────────────────────────────────────────────────────────
     private void crearCambioTurno(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -137,8 +125,8 @@ public class EmpleadoGestionServlet extends HttpServlet {
         SolicitudCambioTurno s = new SolicitudCambioTurno();
         s.setIdEmpleado(sesion.getIdEmpleado());
         s.setFechaInicial(request.getParameter("fechaInicial"));
-        s.setIdTurnoInicial(sesion.getIdTurnoDefault()); // turno actual del empleado
-        s.setIdAreaOrigen(sesion.getIdArea());            // área actual del empleado
+        s.setIdTurnoInicial(sesion.getIdTurnoDefault());
+        s.setIdAreaOrigen(sesion.getIdArea());
         s.setFechaNueva(request.getParameter("fechaNueva"));
         s.setIdTurnoNuevo(Integer.parseInt(request.getParameter("idTurnoNuevo")));
         s.setIdAreaDestino(Integer.parseInt(request.getParameter("idAreaDestino")));
@@ -158,7 +146,6 @@ public class EmpleadoGestionServlet extends HttpServlet {
         boolean exito = ctDAO.crear(s);
 
         if (exito) {
-            // CU5-FA02 paso 11 — bitácora
             bitacoraDAO.registrar(sesion.getIdEmpleado(), sesion.getUsuario(),
                     "Cambio Turno", "Solicitar",
                     "Cambio de turno solicitado por " + sesion.getNombreCompleto()
@@ -176,9 +163,6 @@ public class EmpleadoGestionServlet extends HttpServlet {
         request.getRequestDispatcher("/jsp/gestiones_empleado.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VALIDAR SESIÓN — todos los roles pueden ver sus gestiones
-    // ─────────────────────────────────────────────────────────
     private Empleado validarSesion(HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);

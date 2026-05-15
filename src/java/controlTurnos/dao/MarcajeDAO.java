@@ -13,14 +13,10 @@ import java.util.List;
 
 public class MarcajeDAO {
 
-    // ─────────────────────────────────────────────────────────
-    // VALIDAR HORARIO DEL TURNO
-    // RN01 actualizado: tarde si llega 1 minuto después de
-    // la hora_inicio del turno. El margen es +15 min antes
-    // de la hora_inicio para no bloquear anticipos.
+    // RN01 actualizado: tarde si llega 1 minuto después de la hora_inicio del turno.
+    // El margen es +15 min antes de la hora_inicio para no bloquear anticipos.
     // Se bloquea si está fuera de la ventana del turno.
     // Turno Nocturno (22:00-06:00) cruza medianoche — manejo especial.
-    // ─────────────────────────────────────────────────────────
     public boolean estaEnHorario(Turno turno) {
         if (turno == null) return true; // sin turno asignado: permitir
         LocalTime ahora    = LocalTime.now();
@@ -38,10 +34,7 @@ public class MarcajeDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CALCULAR ENTRADA TARDE según turno
     // Tarde = llegó más de 1 minuto después de hora_inicio
-    // ─────────────────────────────────────────────────────────
     private int calcularTarde(Turno turno) {
         if (turno == null) return 0;
         LocalTime ahora     = LocalTime.now();
@@ -53,9 +46,6 @@ public class MarcajeDAO {
         return !ahora.isBefore(inicioTarde) ? 1 : 0;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // OBTENER MARCAJE DE HOY
-    // ─────────────────────────────────────────────────────────
     public Marcaje obtenerMarcajeHoy(int idEmpleado) {
         Marcaje marcaje = null;
         String sql = "SELECT id_marcaje, id_empleado, fecha_marcaje, hora_entrada, "
@@ -78,9 +68,6 @@ public class MarcajeDAO {
         return marcaje;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // MARCAR ENTRADA — RN01 según turno del empleado
-    // ─────────────────────────────────────────────────────────
     public boolean marcarEntrada(int idEmpleado, Turno turno) {
         String sql = "INSERT INTO marcajes (id_empleado, fecha_marcaje, hora_entrada, entrada_tarde) "
                    + "VALUES (?, CURDATE(), CURTIME(), ?)";
@@ -101,9 +88,6 @@ public class MarcajeDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // MARCAR DESCANSO 1
-    // ─────────────────────────────────────────────────────────
     public boolean marcarDescanso1(int idEmpleado) {
         String sql = "UPDATE marcajes SET hora_descanso1 = CURTIME() "
                    + "WHERE id_empleado = ? AND fecha_marcaje = CURDATE() "
@@ -123,9 +107,6 @@ public class MarcajeDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // MARCAR DESCANSO 2
-    // ─────────────────────────────────────────────────────────
     public boolean marcarDescanso2(int idEmpleado) {
         String sql = "UPDATE marcajes SET hora_descanso2 = CURTIME() "
                    + "WHERE id_empleado = ? AND fecha_marcaje = CURDATE() "
@@ -145,9 +126,6 @@ public class MarcajeDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // MARCAR SALIDA
-    // ─────────────────────────────────────────────────────────
     public boolean marcarSalida(int idEmpleado) {
         String sql = "UPDATE marcajes SET hora_salida = CURTIME() "
                    + "WHERE id_empleado = ? AND fecha_marcaje = CURDATE() "
@@ -167,9 +145,6 @@ public class MarcajeDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR MARCAJES HOY POR ADMINAREA — AdminArea ve solo SUS empleados
-    // ─────────────────────────────────────────────────────────
     public List<Marcaje> listarMarcajesHoyPorAdminArea(int idAdminArea) {
         List<Marcaje> lista = new ArrayList<>();
         String sql = "SELECT m.id_marcaje, m.id_empleado, m.fecha_marcaje, "
@@ -202,9 +177,6 @@ public class MarcajeDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR TODOS LOS MARCAJES DE HOY — solo para AdminRRHH (visual)
-    // ─────────────────────────────────────────────────────────
     public List<Marcaje> listarTodosMarcajesHoy() {
         List<Marcaje> lista = new ArrayList<>();
         String sql = "SELECT m.id_marcaje, m.id_empleado, m.fecha_marcaje, "

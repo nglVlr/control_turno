@@ -11,11 +11,6 @@ import java.util.List;
 
 public class SolicitudGestionDAO {
 
-    // ─────────────────────────────────────────────────────────
-    // CREAR — CU5 paso 8
-    // Empleado crea solicitud → estado: Pendiente
-    // AdminArea la verá en su módulo de gestión
-    // ─────────────────────────────────────────────────────────
     public boolean crear(SolicitudGestion s) {
         String sql = "INSERT INTO solicitudes_gestion "
                    + "(id_empleado, id_tipo_gestion, fecha_inicio, fecha_fin, motivo, estado) "
@@ -39,10 +34,7 @@ public class SolicitudGestionDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR PENDIENTES POR ADMINAREA — Bug fix
-    // Usa id_admin_area en lugar de área+turno
-    // ─────────────────────────────────────────────────────────
+    // Usa id_admin_area en lugar de área+turno para filtrar empleados del AdminArea
     public List<SolicitudGestion> listarPendientesPorAdminArea(int idAdminArea) {
         List<SolicitudGestion> lista = new ArrayList<>();
         String sql = "SELECT sg.*, e.nombre_completo AS nombre_empleado, "
@@ -91,10 +83,6 @@ public class SolicitudGestionDAO {
         return 0;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR PENDIENTES PARA ADMINAREA — método anterior por área+turno
-    // AdminArea ve solicitudes Pendiente de empleados de su área+turno
-    // ─────────────────────────────────────────────────────────
     public List<SolicitudGestion> listarPendientesPorAreaYTurno(int idArea, int idTurno) {
         List<SolicitudGestion> lista = new ArrayList<>();
         String sql = "SELECT sg.*, e.nombre_completo AS nombre_empleado, "
@@ -124,10 +112,7 @@ public class SolicitudGestionDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR PENDIENTES PARA RRHH — CU1-FA06
-    // RRHH ve solicitudes en estado 'Aprobada AdminArea' (pendiente RRHH)
-    // ─────────────────────────────────────────────────────────
+    // RRHH ve solicitudes en estado 'Aprobada AdminArea' — flujo de aprobación de dos pasos
     public List<SolicitudGestion> listarPendientesRRHH() {
         List<SolicitudGestion> lista = new ArrayList<>();
         String sql = "SELECT sg.*, e.nombre_completo AS nombre_empleado, "
@@ -154,9 +139,6 @@ public class SolicitudGestionDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // LISTAR POR EMPLEADO — historial del empleado CU5
-    // ─────────────────────────────────────────────────────────
     public List<SolicitudGestion> listarPorEmpleado(int idEmpleado) {
         List<SolicitudGestion> lista = new ArrayList<>();
         String sql = "SELECT sg.*, e.nombre_completo AS nombre_empleado, "
@@ -184,11 +166,8 @@ public class SolicitudGestionDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // RESOLVER POR ADMINAREA — CU4-FA03/FA04
     // Aprobar → estado: 'Aprobada AdminArea' → pasa a RRHH
     // Rechazar → estado: 'Rechazada AdminArea'
-    // ─────────────────────────────────────────────────────────
     public boolean resolverAdminArea(int idSolicitud, int idAdmin, String decision, String obs) {
         String estadoNuevo = "Aprobar".equals(decision)
                 ? "Aprobada AdminArea" : "Rechazada AdminArea";
@@ -199,11 +178,8 @@ public class SolicitudGestionDAO {
         return ejecutarUpdate(sql, estadoNuevo, idAdmin, obs, idSolicitud);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // RESOLVER POR RRHH — CU1-FA06
     // Aprobar → estado: 'Aprobada RRHH'
     // Rechazar → estado: 'Rechazada RRHH'
-    // ─────────────────────────────────────────────────────────
     public boolean resolverRRHH(int idSolicitud, int idAdmin, String decision, String obs) {
         String estadoNuevo = "Aprobar".equals(decision)
                 ? "Aprobada RRHH" : "Rechazada RRHH";
@@ -214,9 +190,6 @@ public class SolicitudGestionDAO {
         return ejecutarUpdate(sql, estadoNuevo, idAdmin, obs, idSolicitud);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CONTAR PENDIENTES — para badges en los menús
-    // ─────────────────────────────────────────────────────────
     public int contarPendientesPorAreaYTurno(int idArea, int idTurno) {
         String sql = "SELECT COUNT(*) FROM solicitudes_gestion sg "
                    + "INNER JOIN empleados e ON sg.id_empleado = e.id_empleado "
@@ -229,9 +202,6 @@ public class SolicitudGestionDAO {
         return contarQuerySinParams(sql);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────────────────
     private boolean ejecutarUpdate(String sql, String estado, int idAdmin, String obs, int idSolicitud) {
         Connection con = null;
         PreparedStatement ps = null;

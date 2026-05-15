@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="controlTurnos.util.AppConfig"%>
 <%@page import="controlTurnos.modelo.Empleado"%>
 <%@page import="controlTurnos.modelo.Turno"%>
 <%@page import="controlTurnos.modelo.Area"%>
@@ -25,7 +26,7 @@
 </head>
 <body>
 <nav class="navbar navbar-custom navbar-expand-lg px-4 py-2">
-    <span class="navbar-brand text-white fw-bold">Control de Turnos</span>
+    <span class="navbar-brand text-white fw-bold">Control de Turnos <span class="badge bg-secondary ms-1" style="font-size:0.65rem;vertical-align:middle;"><%=AppConfig.VERSION%></span></span>
     <div class="ms-auto d-flex align-items-center gap-3">
         <span class="text-white-50 small">
             <span class="text-white fw-semibold"><%= sesion.getNombreCompleto() %></span>
@@ -69,13 +70,13 @@
                     <%-- CU5-FA02 paso 3: fecha inicial --%>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha Inicial <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" name="fechaInicial" required>
+                        <input type="date" class="form-control" name="fechaInicial" id="fechaInicial" required>
                     </div>
 
                     <%-- CU5-FA02 paso 5: fecha nueva --%>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha Nueva <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" name="fechaNueva" required>
+                        <input type="date" class="form-control" name="fechaNueva" id="fechaNueva" required>
                     </div>
 
                     <%-- CU5-FA02 paso 6: turno nuevo --%>
@@ -129,10 +130,25 @@
 
 <script src="${pageContext.request.contextPath}/js/bootstrap.bundle.min.js"></script>
 <script>
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaInicial').min = hoy;
+    document.getElementById('fechaNueva').min   = hoy;
+
+    document.getElementById('fechaInicial').addEventListener('change', function() {
+        document.getElementById('fechaNueva').min = this.value || hoy;
+        const fn = document.getElementById('fechaNueva');
+        if (fn.value && fn.value < this.value) fn.value = '';
+    });
+
     document.querySelector('form').addEventListener('submit', function(e) {
-        const fi = document.querySelector('[name=fechaInicial]').value;
-        const fn = document.querySelector('[name=fechaNueva]').value;
-        if (fi && fn && fn < fi) {
+        const fi = document.getElementById('fechaInicial').value;
+        const fn = document.getElementById('fechaNueva').value;
+        if (fi < hoy) {
+            e.preventDefault();
+            alert('La fecha inicial no puede ser un día pasado.');
+            return;
+        }
+        if (fn && fn < fi) {
             e.preventDefault();
             alert('La fecha nueva no puede ser anterior a la fecha inicial.');
         }

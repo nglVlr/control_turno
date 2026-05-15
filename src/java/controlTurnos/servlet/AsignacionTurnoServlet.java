@@ -38,12 +38,8 @@ public class AsignacionTurnoServlet extends HttpServlet {
                 break;
 
             case "formularioAsignar":
-                // ─────────────────────────────────────────────
-                // CU3 paso 5 — Formulario de asignación
                 // AdminArea solo ve SUS empleados (id_admin_area)
-                // El turno asignado SIEMPRE es el turno del AdminArea
-                // No se permite asignar un turno diferente al propio
-                // ─────────────────────────────────────────────
+                // El turno asignado SIEMPRE es el turno del AdminArea — no se permite asignar otro
                 if ("AdminArea".equals(sesion.getNombreRol())) {
                     // Solo sus empleados asignados
                     request.setAttribute("listaEmpleados",
@@ -88,13 +84,10 @@ public class AsignacionTurnoServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // ASIGNAR TURNO — CU3 pasos 6-12
     // Reglas:
     // 1. El empleado debe pertenecer al AdminArea que asigna
     // 2. El turno asignado DEBE ser el mismo turno del AdminArea
     // 3. AdminRRHH puede asignar cualquier turno a cualquier empleado
-    // ─────────────────────────────────────────────────────────
     private void asignarTurno(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -103,7 +96,6 @@ public class AsignacionTurnoServlet extends HttpServlet {
         String fechaInicio = request.getParameter("fechaInicio");
         String fechaFin    = request.getParameter("fechaFin");
 
-        // El turno siempre es el del AdminArea — no viene del form
         // Si es RRHH viene del form, si es AdminArea se fuerza el suyo
         int idTurno;
         if ("AdminArea".equals(sesion.getNombreRol())) {
@@ -112,7 +104,6 @@ public class AsignacionTurnoServlet extends HttpServlet {
             idTurno = Integer.parseInt(request.getParameter("idTurno"));
         }
 
-        // Verificar que el empleado pertenece al AdminArea
         if ("AdminArea".equals(sesion.getNombreRol())) {
             Empleado empTarget = empleadoDAO.buscarPorId(idEmpleado);
             if (empTarget == null
@@ -146,9 +137,6 @@ public class AsignacionTurnoServlet extends HttpServlet {
         cargarListaYForward(request, response, sesion);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────────────────
     private void cargarListaYForward(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -181,9 +169,6 @@ public class AsignacionTurnoServlet extends HttpServlet {
                .forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VALIDAR SESIÓN — AdminArea y AdminRRHH
-    // ─────────────────────────────────────────────────────────
     private Empleado validarSesion(HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);

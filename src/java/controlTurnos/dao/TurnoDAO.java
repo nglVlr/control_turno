@@ -31,10 +31,6 @@ public class TurnoDAO {
         return lista;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // BUSCAR POR ID — necesario para validar horario en marcaje
-    // Retorna hora_inicio y hora_fin del turno del empleado
-    // ─────────────────────────────────────────────────────────
     public Turno buscarPorId(int idTurno) {
         Turno turno = null;
         String sql = "SELECT id_turno, nombre_turno, hora_inicio, hora_fin, "

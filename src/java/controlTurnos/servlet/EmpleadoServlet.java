@@ -7,6 +7,7 @@ import controlTurnos.dao.EmpleadoDAO;
 import controlTurnos.dao.RolDAO;
 import controlTurnos.dao.TurnoDAO;
 import controlTurnos.modelo.Empleado;
+import controlTurnos.util.CorreoService;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,38 +37,39 @@ public class EmpleadoServlet extends HttpServlet {
         switch (accion) {
 
             case "listar":
-                request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
-                request.getRequestDispatcher("/jsp/consultar_empleado.jsp")
+                cargarDashboard(request, "usuarios");
+                request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp")
                        .forward(request, response);
                 break;
 
             case "formularioAgregar":
-                request.setAttribute("listaAreas",  areaDAO.listarActivas());
-                request.setAttribute("listaTurnos", turnoDAO.listarActivos());
-                request.getRequestDispatcher("/jsp/agregar_empleado.jsp")
+                cargarDashboard(request, "agregar");
+                request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp")
                        .forward(request, response);
                 break;
 
-            // Carga AdminAreas por área+turno (llamado via AJAX desde agregar_empleado.jsp)
             case "adminAreasPorAreaYTurno":
-                int idArea  = Integer.parseInt(request.getParameter("idArea"));
-                int idTurno = Integer.parseInt(request.getParameter("idTurno"));
-                request.setAttribute("listaAdmins",
-                        empleadoDAO.listarAdminAreaPorAreaYTurno(idArea, idTurno));
+                try {
+                    int idArea  = Integer.parseInt(request.getParameter("idArea"));
+                    int idTurno = Integer.parseInt(request.getParameter("idTurno"));
+                    request.setAttribute("listaAdmins",
+                            empleadoDAO.listarAdminAreaPorAreaYTurno(idArea, idTurno));
+                } catch (NumberFormatException ex) {
+                    request.setAttribute("listaAdmins", new java.util.ArrayList<>());
+                }
                 request.getRequestDispatcher("/jsp/combo_admins.jsp")
                        .forward(request, response);
                 break;
 
             case "areas":
-                request.setAttribute("listaAreas", areaDAO.listarActivas());
-                request.getRequestDispatcher("/jsp/gestionar_areas.jsp")
+                cargarDashboard(request, "areas");
+                request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp")
                        .forward(request, response);
                 break;
 
             case "roles":
-                request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
-                request.setAttribute("listaRoles",     rolDAO.listarActivos());
-                request.getRequestDispatcher("/jsp/gestionar_roles.jsp")
+                cargarDashboard(request, "roles");
+                request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp")
                        .forward(request, response);
                 break;
 
@@ -92,6 +94,7 @@ public class EmpleadoServlet extends HttpServlet {
         switch (accion) {
             case "agregar":    agregarEmpleado(request, response, sesion);   break;
             case "inactivar":  inactivarEmpleado(request, response, sesion); break;
+            case "reactivar":  reactivarEmpleado(request, response, sesion); break;
             case "editarArea": editarArea(request, response, sesion);        break;
             case "cambiarRol": cambiarRol(request, response, sesion);        break;
             default:
@@ -99,11 +102,6 @@ public class EmpleadoServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // AGREGAR EMPLEADO — CU1 paso 7
-    // Guarda id_admin_area y creado_por
-    // Registra en bitácora + bitácora detalle
-    // ─────────────────────────────────────────────────────────
     private void agregarEmpleado(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -113,7 +111,41 @@ public class EmpleadoServlet extends HttpServlet {
         if (empleadoDAO.existeUsuario(usuario)) {
             cargarCombosAgregar(request);
             request.setAttribute("error", "Error: El usuario ya existe en el sistema.");
-            request.getRequestDispatcher("/jsp/agregar_empleado.jsp").forward(request, response);
+            request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
+            return;
+        }
+
+        int idRol = 0;
+        try { idRol = Integer.parseInt(request.getParameter("idRol")); }
+        catch (NumberFormatException e) { idRol = 3; } // default Empleado
+
+        // idAdminArea solo aplica para Empleado (rol=3)
+        int idAdminArea = 0;
+        try {
+            String p = request.getParameter("idAdminAreaHidden");
+            if (p != null && !p.trim().isEmpty()) idAdminArea = Integer.parseInt(p.trim());
+        } catch (NumberFormatException e) { idAdminArea = 0; }
+
+        int idArea  = 0;
+        int idTurno = 0;
+        try {
+            String p = request.getParameter("idArea");
+            if (p != null && !p.trim().isEmpty()) idArea = Integer.parseInt(p.trim());
+        } catch (NumberFormatException e) { idArea = 0; }
+        try {
+            String p = request.getParameter("idTurno");
+            if (p != null && !p.trim().isEmpty()) idTurno = Integer.parseInt(p.trim());
+        } catch (NumberFormatException e) { idTurno = 0; }
+
+        // Si es AdminRRHH y no eligió área, asignar a Recursos Humanos automáticamente
+        if (idRol == 1 && idArea == 0) {
+            idArea = 1; // Recursos Humanos
+        }
+
+        if (idRol == 3 && idAdminArea == 0) {
+            cargarDashboard(request, "agregar");
+            request.setAttribute("error", "Debes seleccionar un AdminArea para el empleado.");
+            request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
             return;
         }
 
@@ -123,38 +155,85 @@ public class EmpleadoServlet extends HttpServlet {
         emp.setUsuario(usuario);
         emp.setContrasena(request.getParameter("contrasena").trim());
         emp.setCorreo(request.getParameter("correo").trim());
-        emp.setIdArea(Integer.parseInt(request.getParameter("idArea")));
-        emp.setIdTurnoDefault(Integer.parseInt(request.getParameter("idTurno")));
-        emp.setIdAdminArea(Integer.parseInt(request.getParameter("idAdminArea")));
+        emp.setIdArea(idArea);
+        emp.setIdRol(idRol);
+        emp.setIdTurnoDefault(idTurno);
+        emp.setIdAdminArea(idAdminArea);
         emp.setCreadoPor(sesion.getIdEmpleado());
 
-        boolean exito = empleadoDAO.agregar(emp);
+        boolean exito = empleadoDAO.agregarConRol(emp);
 
         if (exito) {
-            // Bitácora principal
+            // Capturar todos los valores ANTES del hilo — el request no es thread-safe
+            final String correoDestino  = emp.getCorreo();
+            final String nombreCompleto = emp.getNombreCompleto();
+            final String usuarioTxt     = emp.getUsuario();
+            final String contrasenaTxt  = request.getParameter("contrasena") != null
+                                        ? request.getParameter("contrasena").trim() : "";
+
             long idLog = bitacoraDAO.registrar(sesion.getIdEmpleado(), sesion.getUsuario(),
                     "Empleados", "Crear",
-                    "Empleado creado: " + emp.getNombreCompleto());
-            // Bitácora detalle — campos creados (valor_anterior = null = creación nueva)
+                    "Usuario creado: " + emp.getNombreCompleto() + " | Rol id: " + idRol);
+
             if (idLog > 0) {
-                detalleDAO.registrar(idLog, null, "usuario",        null, emp.getUsuario());
-                detalleDAO.registrar(idLog, null, "nombre_completo",null, emp.getNombreCompleto());
-                detalleDAO.registrar(idLog, null, "id_area",        null, String.valueOf(emp.getIdArea()));
-                detalleDAO.registrar(idLog, null, "id_turno",       null, String.valueOf(emp.getIdTurnoDefault()));
-                detalleDAO.registrar(idLog, null, "id_admin_area",  null, String.valueOf(emp.getIdAdminArea()));
+                Empleado creado = empleadoDAO.buscarPorUsuario(emp.getUsuario());
+
+                detalleDAO.registrar(idLog, null, "usuario",         null, emp.getUsuario());
+                detalleDAO.registrar(idLog, null, "nombre_completo", null, emp.getNombreCompleto());
+                detalleDAO.registrar(idLog, null, "rol",             null,
+                        creado != null ? creado.getNombreRol()   : String.valueOf(idRol));
+                detalleDAO.registrar(idLog, null, "area",            null,
+                        creado != null ? creado.getNombreArea()  : String.valueOf(idArea));
+                detalleDAO.registrar(idLog, null, "turno",           null,
+                        creado != null ? creado.getNombreTurno() : String.valueOf(idTurno));
+                if (idAdminArea > 0) {
+                    detalleDAO.registrar(idLog, null, "admin_area",  null,
+                            creado != null ? creado.getNombreAdminArea() : String.valueOf(idAdminArea));
+                }
+
+                final String rolTxt   = creado != null && creado.getNombreRol()   != null ? creado.getNombreRol()   : "";
+                final String areaTxt  = creado != null && creado.getNombreArea()  != null ? creado.getNombreArea()  : "";
+                final String turnoTxt = creado != null && creado.getNombreTurno() != null ? creado.getNombreTurno() : "";
+
+                new Thread(() -> {
+                    CorreoService.enviarBienvenida(
+                            correoDestino, nombreCompleto, usuarioTxt,
+                            contrasenaTxt, rolTxt, areaTxt, turnoTxt);
+                }).start();
             }
-            request.setAttribute("exito", "Empleado creado correctamente.");
+            request.setAttribute("exito", "Usuario creado correctamente. Se envió un correo de bienvenida.");
         } else {
-            request.setAttribute("error", "Error al registrar el empleado.");
+            request.setAttribute("error", "Error al registrar el usuario.");
         }
 
-        cargarCombosAgregar(request);
-        request.getRequestDispatcher("/jsp/agregar_empleado.jsp").forward(request, response);
+        cargarDashboard(request, "agregar");
+        request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // INACTIVAR EMPLEADO — CU1-FA03
-    // ─────────────────────────────────────────────────────────
+    private void reactivarEmpleado(HttpServletRequest request,
+            HttpServletResponse response, Empleado sesion)
+            throws ServletException, IOException {
+
+        int idEmpleado = Integer.parseInt(request.getParameter("idEmpleado"));
+        Empleado antes = empleadoDAO.buscarPorId(idEmpleado);
+        boolean exito  = empleadoDAO.reactivar(idEmpleado, sesion.getIdEmpleado());
+
+        if (exito && antes != null) {
+            long idLog = bitacoraDAO.registrar(sesion.getIdEmpleado(), sesion.getUsuario(),
+                    "Empleados", "Crear",
+                    "Empleado reactivado: " + antes.getNombreCompleto());
+            if (idLog > 0) {
+                detalleDAO.registrar(idLog, idEmpleado, "estado", "Inactivo", "Activo");
+            }
+        }
+
+        request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
+        request.setAttribute("tab", "usuarios");
+        request.setAttribute(exito ? "exito" : "error",
+                exito ? "Empleado reactivado correctamente." : "Error al reactivar el empleado.");
+        request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
+    }
+
     private void inactivarEmpleado(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -170,20 +249,17 @@ public class EmpleadoServlet extends HttpServlet {
                     "Empleados", "Inactivar",
                     "Empleado inactivado: " + antes.getNombreCompleto() + " | Motivo: " + motivo);
             if (idLog > 0) {
-                detalleDAO.registrar(idLog, idEmpleado, "estado",               "Activo",   "Inactivo");
-                detalleDAO.registrar(idLog, idEmpleado, "motivo_inactivacion",  null,        motivo);
+                detalleDAO.registrar(idLog, idEmpleado, "estado",              "Activo",  "Inactivo");
+                detalleDAO.registrar(idLog, idEmpleado, "motivo_inactivacion", "Ninguno", motivo);
             }
         }
 
-        request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
         request.setAttribute(exito ? "exito" : "error",
                 exito ? "Empleado inactivado correctamente." : "Error al inactivar el empleado.");
-        request.getRequestDispatcher("/jsp/consultar_empleado.jsp").forward(request, response);
+        cargarDashboard(request, "usuarios");
+        request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // EDITAR ÁREA
-    // ─────────────────────────────────────────────────────────
     private void editarArea(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -196,16 +272,12 @@ public class EmpleadoServlet extends HttpServlet {
             bitacoraDAO.registrar(sesion.getIdEmpleado(), sesion.getUsuario(),
                     "Areas", "Crear", "Area id:" + idArea + " actualizada.");
         }
-        request.setAttribute("listaAreas", areaDAO.listarActivas());
         request.setAttribute(exito ? "exito" : "error",
                 exito ? "Área actualizada correctamente." : "Error al actualizar el área.");
-        request.getRequestDispatcher("/jsp/gestionar_areas.jsp").forward(request, response);
+        cargarDashboard(request, "areas");
+        request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // CAMBIAR ROL — FA09
-    // Guarda modificado_por y registra detalle
-    // ─────────────────────────────────────────────────────────
     private void cambiarRol(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -218,11 +290,11 @@ public class EmpleadoServlet extends HttpServlet {
             request.setAttribute("error", "Empleado no encontrado.");
             request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
             request.setAttribute("listaRoles",     rolDAO.listarActivos());
-            request.getRequestDispatcher("/jsp/gestionar_roles.jsp").forward(request, response);
+            request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
             return;
         }
 
-        // Si nuevo rol es AdminArea, degradar al anterior si existe
+        // Si nuevo rol es AdminArea, degradar al anterior si existe (unicidad por área+turno)
         if (idRolNuevo == 2) {
             Empleado adminActual = empleadoDAO.buscarAdminAreaPorAreaYTurno(
                     emp.getIdArea(), emp.getIdTurnoDefault());
@@ -249,29 +321,34 @@ public class EmpleadoServlet extends HttpServlet {
                     "Rol cambiado: " + emp.getNombreCompleto()
                     + " | " + rolAnterior + " → " + rolNuevoNombre);
             if (idLog > 0) {
-                detalleDAO.registrar(idLog, idEmpleado, "id_rol", rolAnterior, rolNuevoNombre);
+                // Guarda nombres de rol directamente — no IDs
+                detalleDAO.registrar(idLog, idEmpleado, "rol", rolAnterior, rolNuevoNombre);
             }
             request.setAttribute("exito", "La asignación de rol ha sido exitosa.");
         } else {
             request.setAttribute("error", "Error al cambiar el rol.");
         }
 
-        request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
-        request.setAttribute("listaRoles",     rolDAO.listarActivos());
-        request.getRequestDispatcher("/jsp/gestionar_roles.jsp").forward(request, response);
+        request.setAttribute(exito ? "exito" : "error",
+                exito ? "La asignación de rol ha sido exitosa." : "Error al cambiar el rol.");
+        cargarDashboard(request, "roles");
+        request.getRequestDispatcher("/jsp/mantenimiento_usuarios.jsp").forward(request, response);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────────────────
+    private void cargarDashboard(HttpServletRequest request, String tab) {
+        request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
+        request.setAttribute("listaAreas",     areaDAO.listarActivas());
+        request.setAttribute("listaTurnos",    turnoDAO.listarActivos());
+        request.setAttribute("listaRoles",     rolDAO.listarActivos());
+        request.setAttribute("tab",            tab);
+    }
+
     private void cargarCombosAgregar(HttpServletRequest request) {
         request.setAttribute("listaAreas",  areaDAO.listarActivas());
         request.setAttribute("listaTurnos", turnoDAO.listarActivos());
+        request.setAttribute("listaRoles",  rolDAO.listarActivos());
     }
 
-    // ─────────────────────────────────────────────────────────
-    // VALIDAR SESIÓN — solo AdminRRHH
-    // ─────────────────────────────────────────────────────────
     private Empleado validarSesionRRHH(HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);

@@ -34,14 +34,12 @@ public class ReasignacionServlet extends HttpServlet {
         switch (accion) {
 
             case "listar":
-                // Lista todos los empleados para seleccionar
                 request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
                 request.getRequestDispatcher("/jsp/reasignacion_rrhh.jsp")
                        .forward(request, response);
                 break;
 
             case "formularioReasignar":
-                // Cargar formulario con datos del empleado seleccionado
                 int idEmp = Integer.parseInt(request.getParameter("id"));
                 Empleado emp = empleadoDAO.buscarPorId(idEmp);
                 if (emp == null) {
@@ -88,11 +86,7 @@ public class ReasignacionServlet extends HttpServlet {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // REASIGNAR EMPLEADO — RRHH cambia área, turno y AdminArea
-    // directamente sin necesidad de solicitud previa.
-    // Registra en bitácora detalle qué cambió exactamente.
-    // ─────────────────────────────────────────────────────────
+    // RRHH cambia área, turno y AdminArea directamente sin necesidad de solicitud previa
     private void reasignarEmpleado(HttpServletRequest request,
             HttpServletResponse response, Empleado sesion)
             throws ServletException, IOException {
@@ -111,39 +105,38 @@ public class ReasignacionServlet extends HttpServlet {
             return;
         }
 
-        // Aplicar los tres cambios en BD
         boolean ok = empleadoDAO.reasignar(idEmpleado, idAreaNueva,
                 idTurnoNuevo, idAdminNuevo, sesion.getIdEmpleado());
 
         if (ok) {
-            // Bitácora principal
+            // Buscar el empleado después del cambio para tener los nombres legibles
+            Empleado despues = empleadoDAO.buscarPorId(idEmpleado);
+
             long idLog = bitacoraDAO.registrar(sesion.getIdEmpleado(), sesion.getUsuario(),
                     "Reasignacion", "Crear",
                     "Empleado reasignado: " + antes.getNombreCompleto());
 
-            // Bitácora detalle — solo registra los campos que cambiaron
-            if (idLog > 0) {
+            // Solo registra los campos que efectivamente cambiaron
+            if (idLog > 0 && despues != null) {
                 if (antes.getIdArea() != idAreaNueva) {
-                    detalleDAO.registrar(idLog, idEmpleado, "id_area",
-                            String.valueOf(antes.getIdArea()),
-                            String.valueOf(idAreaNueva));
+                    detalleDAO.registrar(idLog, idEmpleado, "area",
+                            antes.getNombreArea(),
+                            despues.getNombreArea());
                 }
                 if (antes.getIdTurnoDefault() != idTurnoNuevo) {
-                    detalleDAO.registrar(idLog, idEmpleado, "id_turno_default",
-                            String.valueOf(antes.getIdTurnoDefault()),
-                            String.valueOf(idTurnoNuevo));
+                    detalleDAO.registrar(idLog, idEmpleado, "turno",
+                            antes.getNombreTurno() != null ? antes.getNombreTurno() : "Sin turno",
+                            despues.getNombreTurno() != null ? despues.getNombreTurno() : "Sin turno");
                 }
                 if (antes.getIdAdminArea() != idAdminNuevo) {
-                    detalleDAO.registrar(idLog, idEmpleado, "id_admin_area",
-                            String.valueOf(antes.getIdAdminArea()),
-                            String.valueOf(idAdminNuevo));
+                    detalleDAO.registrar(idLog, idEmpleado, "admin_area",
+                            antes.getNombreAdminArea() != null ? antes.getNombreAdminArea() : "Sin asignar",
+                            despues.getNombreAdminArea() != null ? despues.getNombreAdminArea() : "Sin asignar");
                 }
             }
-            request.setAttribute("exito",
-                    "Empleado reasignado correctamente.");
+            request.setAttribute("exito", "Empleado reasignado correctamente.");
         } else {
-            request.setAttribute("error",
-                    "Error al reasignar el empleado. Intente de nuevo.");
+            request.setAttribute("error", "Error al reasignar el empleado. Intente de nuevo.");
         }
 
         request.setAttribute("listaEmpleados", empleadoDAO.listarTodos());
